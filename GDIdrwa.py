@@ -176,7 +176,7 @@ def draw_callback(hdc):
             # 敌人在屏幕上的X坐标计算
             dis_x_screen =dis_DZ_x / dis_WZ_x * screen_width / 2 + (screen_width / 2)
             # 如果敌人相对于准星角度 在 以下范围 才绘制（横向）
-            print(angle_DZ_x)
+            # print(angle_DZ_x)
             if (angle_DZ_x > -54 and angle_DZ_x < 50) or (angle_DZ_x>-360 and angle_DZ_x<-305) :
                 # 敌相对于我空间平面角度
                 angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
