@@ -109,22 +109,162 @@ def draw_callback(hdc):
         # 下面的象限判断和坐标计算与原来一致，只是把 drawRect 换成 hdc 版本
         # 以第一象限为例，其他象限同理
         #第一象限
-        if other_y > my_y and other_x > my_x:
+        # if other_y > my_y and other_x > my_x:
+        #     angle_DW_x = math.degrees(math.atan(sub_y / sub_x))
+        #     angle_DZ_x = fov_x - angle_DW_x
+        #     dis_DZ_x = math.sin(math.radians(angle_DZ_x)) * dis_on_top
+        #     dis_WZ_x = math.sqrt(dis_on_top ** 2 - dis_DZ_x ** 2) * 1.3
+        #     dis_x_screen = dis_DZ_x / dis_WZ_x * width / 2 + (width / 2)
+        #     if -55 < angle_DZ_x < 50:
+        #         angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
+        #         if other_z > my_z:
+        #             angle_DZ_y = fov_y + abs(angle_DW_space)
+        #         elif other_z < my_z:
+        #             angle_DZ_y = fov_y - abs(angle_DW_space)
+        #         dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space
+        #         dis_WZ_y = math.sqrt(dis_on_space ** 2 - dis_DZ_y ** 2) * 0.80
+        #         dis_y_screen = (height / 2) - dis_DZ_y / dis_WZ_y * height / 2
+        #         drawRect(hdc, dis_x_screen, dis_y_screen + 10, dis_on_space, 1, brush)
+            
+        #第一象限
+        if other_y>my_y and other_x>my_x:
+            # print("壹")
+            '''========X计算========'''
+            # 敌相对于我X轴的角度
             angle_DW_x = math.degrees(math.atan(sub_y / sub_x))
-            angle_DZ_x = fov_x - angle_DW_x
-            dis_DZ_x = math.sin(math.radians(angle_DZ_x)) * dis_on_top
-            dis_WZ_x = math.sqrt(dis_on_top ** 2 - dis_DZ_x ** 2) * 1.3
-            dis_x_screen = dis_DZ_x / dis_WZ_x * width / 2 + (width / 2)
-            if -55 < angle_DZ_x < 50:
+            # 敌人相对于准星的角度（横向）
+            angle_DZ_x=fov_x-angle_DW_x
+            # 敌人与准星的横向距离(游戏中_横向)
+            dis_DZ_x=math.sin(math.radians(angle_DZ_x)) * dis_on_top
+            # 我与准星的距离（游戏中_横向）
+            dis_WZ_x= math.sqrt(math.pow(dis_on_top,2)-math.pow(dis_DZ_x,2)) *1.3
+            # 敌人在屏幕上的X坐标计算
+            dis_x_screen=dis_DZ_x/dis_WZ_x*screen_width/2+(screen_width/2)
+            #如果敌人相对于准星角度 在 -55~50才绘制（横向）
+            if angle_DZ_x>-55 and angle_DZ_x<50:
+                '''=========Y计算======='''
+                # 敌相对于我空间平面角度
                 angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
-                if other_z > my_z:
+                # 如果敌人在我上方
+                if other_z>my_z:
+                    # 敌人相对于准星的角度（纵向）
                     angle_DZ_y = fov_y + abs(angle_DW_space)
-                elif other_z < my_z:
+                #如果敌人在我下方
+                elif other_z<my_z:
+                    # 敌人相对于准星的角度（纵向）
                     angle_DZ_y = fov_y - abs(angle_DW_space)
+                # 敌人与准星的距离（游戏中_纵向）
                 dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space
-                dis_WZ_y = math.sqrt(dis_on_space ** 2 - dis_DZ_y ** 2) * 0.80
-                dis_y_screen = (height / 2) - dis_DZ_y / dis_WZ_y * height / 2
-                drawRect(hdc, dis_x_screen, dis_y_screen + 10, dis_on_space, 1, brush)
+                # 我与准星的距离（游戏中_纵向）
+                dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2))*0.80
+                # 敌人在屏幕上的Y坐标计算
+                dis_y_screen = (screen_height / 2) - dis_DZ_y / dis_WZ_y * screen_height / 2
+                #绘制方框
+                drawRect(hdc,dis_x_screen+left,dis_y_screen+top+10,dis_on_space,1,brush)
+        #第二象限
+        elif other_y>my_y and other_x<my_x:
+            # print("贰")
+            '''========X计算========'''
+            # 敌相对于我X轴的角度
+            angle_DW_x = math.degrees(math.atan(sub_y / sub_x))
+            # 敌人相对于准星的角度（横向）
+            angle_DZ_x = fov_x - angle_DW_x-180
+            # 敌人与准星的横向距离(游戏中_横向)
+            dis_DZ_x = math.sin(math.radians(angle_DZ_x)) * dis_on_top
+            # 我与准星的距离（游戏中_横向）
+            dis_WZ_x = math.sqrt(math.pow(dis_on_top, 2) - math.pow(dis_DZ_x, 2)) * 1.3
+            # 敌人在屏幕上的X坐标计算
+            dis_x_screen =dis_DZ_x / dis_WZ_x * screen_width / 2 + (screen_width / 2)
+            # 如果敌人相对于准星角度 在 以下范围 才绘制（横向）
+            print(angle_DZ_x)
+            if (angle_DZ_x > -54 and angle_DZ_x < 50) or (angle_DZ_x>-360 and angle_DZ_x<-305) :
+                # 敌相对于我空间平面角度
+                angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
+                # 如果敌人在我上方
+                if other_z > my_z:
+                    # 敌人相对于准星的角度（纵向）
+                    angle_DZ_y = fov_y + abs(angle_DW_space)
+                # 如果敌人在我下方
+                elif other_z < my_z:
+                    # 敌人相对于准星的角度（纵向）
+                    angle_DZ_y = fov_y - abs(angle_DW_space)
+                # 敌人与准星的距离（游戏中_纵向）
+                dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space
+                # 我与准星的距离（游戏中_纵向）
+                dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2))*0.80
+                # 敌人在屏幕上的Y坐标计算
+                dis_y_screen = (screen_height / 2) - dis_DZ_y / dis_WZ_y * screen_height / 2
+                # 绘制方框
+                drawRect(hdc, dis_x_screen+left, dis_y_screen+top+10, dis_on_space, 1, brush)
+        #第三象限（类似二象限）
+        elif other_y<my_y and other_x<my_x:
+            # print("叁")
+            '''========X计算========'''
+            # 敌相对于我X轴的角度
+            angle_DW_x = math.degrees(math.atan(sub_y / sub_x))
+            # 敌人相对于准星的角度（横向）
+            angle_DZ_x = fov_x - angle_DW_x - 180
+            # 敌人与准星的横向距离(游戏中_横向)
+            dis_DZ_x = math.sin(math.radians(angle_DZ_x)) * dis_on_top
+            # 我与准星的距离（游戏中_横向）
+            dis_WZ_x = math.sqrt(math.pow(dis_on_top, 2) - math.pow(dis_DZ_x, 2)) * 1.3
+            # 敌人在屏幕上的X坐标计算
+            dis_x_screen = dis_DZ_x / dis_WZ_x * screen_width / 2 + (screen_width / 2)
+            # 如果敌人相对于准星角度 在 以下范围 才绘制（横向）
+            if (angle_DZ_x > -410 and angle_DZ_x < -310) or (angle_DZ_x > -50 and angle_DZ_x < 0):
+                # 敌相对于我空间平面角度
+                angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
+                # 如果敌人在我上方
+                if other_z > my_z:
+                    # 敌人相对于准星的角度（纵向）
+                    angle_DZ_y = fov_y + abs(angle_DW_space)
+                # 如果敌人在我下方
+                elif other_z < my_z:
+                    # 敌人相对于准星的角度（纵向）
+                    angle_DZ_y = fov_y - abs(angle_DW_space)
+                # 敌人与准星的距离（游戏中_纵向）
+                dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space
+                # 我与准星的距离（游戏中_纵向）
+                dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2))*0.80
+                # 敌人在屏幕上的Y坐标计算
+                dis_y_screen = (screen_height / 2) - dis_DZ_y / dis_WZ_y * screen_height / 2
+                # 绘制方框
+                drawRect(hdc, dis_x_screen+left, dis_y_screen+top+10, dis_on_space, 1, brush)
+        # 第四象限
+        elif other_y < my_y and other_x > my_x:
+            # print("肆")
+            '''========X计算========'''
+            # 敌相对于我X轴的角度
+            angle_DW_x = math.degrees(math.atan(sub_y / sub_x))
+            # 敌人相对于准星的角度（横向）s
+            angle_DZ_x = fov_x - angle_DW_x
+            # 敌人与准星的横向距离(游戏中_横向)
+            dis_DZ_x = math.sin(math.radians(angle_DZ_x)) * dis_on_top
+            # 我与准星的距离（游戏中_横向）
+            dis_WZ_x = math.sqrt(math.pow(dis_on_top, 2) - math.pow(dis_DZ_x, 2)) * 1.3
+            # 敌人在屏幕上的X坐标计算
+            dis_x_screen = dis_DZ_x / dis_WZ_x * screen_width / 2 + (screen_width / 2)
+            # 如果敌人相对于准星角度 在 -55~50才绘制（横向）
+            if angle_DZ_x > -55 and angle_DZ_x < 50:
+                '''=========Y计算======='''
+                # 敌相对于我空间平面角度
+                angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
+                # 如果敌人在我上方
+                if other_z > my_z:
+                    # 敌人相对于准星的角度（纵向）
+                    angle_DZ_y = fov_y + abs(angle_DW_space)
+                # 如果敌人在我下方
+                elif other_z < my_z:
+                    # 敌人相对于准星的角度（纵向）
+                    angle_DZ_y = fov_y - abs(angle_DW_space)
+                # 敌人与准星的距离（游戏中_纵向）
+                dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space
+                # 我与准星的距离（游戏中_纵向）
+                dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2))*0.80
+                # 敌人在屏幕上的Y坐标计算
+                dis_y_screen = (screen_height / 2) - dis_DZ_y / dis_WZ_y * screen_height / 2
+                # 绘制方框
+                drawRect(hdc, dis_x_screen+left, dis_y_screen+top+10, dis_on_space, 1, brush)
   
         # 其余象限同理，照搬原有逻辑，drawRect(hdc, ...)即可
 
@@ -135,6 +275,6 @@ print("Overlay窗口已创建，开始监听游戏数据...")
 while True:
     overlay.refresh()
     win32gui.PumpWaitingMessages()
-    time.sleep(0.1)  # 控制刷新频率，避免过高的CPU占用
+    time.sleep(0.05)  # 控制刷新频率，避免过高的CPU占用
     # 这里可以添加其他逻辑，比如检测游戏状态变化等  
     
