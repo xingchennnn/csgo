@@ -1,5 +1,25 @@
 import win32con
 import win32gui
+import win32api
+
+def drawRect(hdc, x, y, dis_in_space, size, brush):
+    size = 2
+    width = max(1, int(20899 / dis_in_space))
+    height = max(1, int(49999 / dis_in_space))
+    x = int(x - width / 2)
+    y = int(y - height / 4)
+    # 画四条边
+    win32gui.FillRect(hdc, (x, y, x + width, y + size), brush)  # 上
+    win32gui.FillRect(hdc, (x, y + height, x + width, y + height + size), brush)  # 下
+    win32gui.FillRect(hdc, (x, y, x + size, y + height), brush)  # 左
+    win32gui.FillRect(hdc, (x + width - size, y, x + width, y + height), brush)  # 右
+
+
+
+
+
+
+
 
 '''
 
@@ -11,6 +31,8 @@ y:要绘制的矩形的左上角点的y坐标
 size：线条的粗细(单位为像素)
 brush：画刷对象 , 建议使用 brush = win32gui.CreateSolidBrush(win32api.RGB(255,0,0)) 自定义颜色
 dis_in_space: 敌我空间距离
+'''
+
 '''
 def drawRect(dc,cdc,x,y,dis_in_space,size,brush):
     size=2
@@ -37,6 +59,7 @@ def drawRect(dc,cdc,x,y,dis_in_space,size,brush):
     win32gui.SelectObject(cdc, rightBMP)
     win32gui.FillRect(cdc, (0, 0, size, height), brush)
     win32gui.BitBlt(dc, x + width - size, y, size, height, cdc, 0, 0, win32con.SRCCOPY)
+'''   
 
 '''
 文字绘制，还有点问题
