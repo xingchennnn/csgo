@@ -40,7 +40,7 @@ client_dll_offset_x = 0X1A78E24
 x_offset = 0xDB8
 y_offset = 0xDBC
 z_offset = 0xDC0
-blood_offset = 0x344
+blood_offset = 0xAB4
 
 brush = win32gui.CreateSolidBrush(win32api.RGB(0, 0, 255))
 
@@ -108,6 +108,7 @@ def draw_callback(hdc):
 
         # 下面的象限判断和坐标计算与原来一致，只是把 drawRect 换成 hdc 版本
         # 以第一象限为例，其他象限同理
+        #第一象限
         if other_y > my_y and other_x > my_x:
             angle_DW_x = math.degrees(math.atan(sub_y / sub_x))
             angle_DZ_x = fov_x - angle_DW_x
@@ -124,6 +125,7 @@ def draw_callback(hdc):
                 dis_WZ_y = math.sqrt(dis_on_space ** 2 - dis_DZ_y ** 2) * 0.80
                 dis_y_screen = (height / 2) - dis_DZ_y / dis_WZ_y * height / 2
                 drawRect(hdc, dis_x_screen, dis_y_screen + 10, dis_on_space, 1, brush)
+  
         # 其余象限同理，照搬原有逻辑，drawRect(hdc, ...)即可
 
 # 创建Overlay窗口
@@ -133,6 +135,6 @@ print("Overlay窗口已创建，开始监听游戏数据...")
 while True:
     overlay.refresh()
     win32gui.PumpWaitingMessages()
-    time.sleep(0.05)  # 控制刷新频率，避免过高的CPU占用
+    time.sleep(0.1)  # 控制刷新频率，避免过高的CPU占用
     # 这里可以添加其他逻辑，比如检测游戏状态变化等  
     
