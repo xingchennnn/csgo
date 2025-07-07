@@ -7,6 +7,10 @@ import time
 
 from GDIUtils import drawRect
 from GDIOverlay import OverlayWindow
+from math import asin
+    
+def safe_asin(x):
+    return asin(max(-1.0, min(1.0, x)))
 
 
 WindowHandle = win32gui.FindWindow(None, "Counter-Strike 2")
@@ -34,75 +38,118 @@ if not client_dll:
     print("无法获取 client.dll 基址，请确认游戏已启动且窗口名正确。")
     exit(1)
 
-client_dll_offset_human = 0x1865288
-client_dll_offset_y = 0x1A794B0
-client_dll_offset_x = 0X1A78E24
-x_offset = 0xDB8
-y_offset = 0xDBC
-z_offset = 0xDC0
-blood_offset = 0xAB4
+client_dll_offset_human = 0x1865288 # 人物数组偏移
+client_dll_offset_y = 0x1A794B0 # 方向y偏移
+client_dll_offset_x = 0X1A78E24 # 方向x偏移
+x_offset = 0xDB8 # 角色 X 轴坐标偏移
+y_offset = 0xDBC # 角色 Y 轴坐标偏移
+z_offset = 0xDC0 # 角色 Z 轴坐标偏移
+blood_offset = 0xAB4 # 血量偏移
+camp_offset = 0xE68 # 阵营偏移
 
 brush = win32gui.CreateSolidBrush(win32api.RGB(0, 0, 255))
 
-human_array = pymem.memory.read_longlong(ProcessHandle, client_dll + client_dll_offset_human)
-my_offset_way1 = 0x8
-my_offset_way2 = 0x0
-my_array_way1 = pymem.memory.read_longlong(ProcessHandle, human_array + my_offset_way1)
-my_blood_way1 = pymem.memory.read_int(ProcessHandle, my_array_way1 + blood_offset)
-my_array = my_array_way1
-my_offset = my_offset_way1
-isEight = True
-if my_blood_way1 == 0:
-    my_array_way2 = pymem.memory.read_longlong(ProcessHandle, human_array + my_offset_way2)
-    my_blood_way2 = pymem.memory.read_int(ProcessHandle, my_array_way2 + blood_offset)
-    my_array = my_array_way2
-    my_offset = my_offset_way2
-    isEight = False
+human_array = pymem.memory.read_longlong(ProcessHandle, client_dll + client_dll_offset_human)  # 读取人物数组 基址
 
-# 获取屏幕分辨率
-screen_width = win32api.GetSystemMetrics(0)
-screen_height = win32api.GetSystemMetrics(1)
+my_offset_way1 = 0x8 # 8人模式下第一个角色偏移
+my_offset_way2 = 0x0 # 8人模式下第二个角色偏移
+
+my_array_way1 = pymem.memory.read_longlong(ProcessHandle, human_array + my_offset_way1)  # 读取第一个角色数组    基址+偏移 = 我的角色数组基址
+
+my_blood_way1 = pymem.memory.read_int(ProcessHandle, my_array_way1 + blood_offset)  # 读取第一个角色血量    我的角色数组基址+血量偏移 = 我的角色血量
+
+my_array = my_array_way1  # 选择第一个角色数组
+my_offset = my_offset_way1  # 选择第一个角色偏移
+
+isEight = True  # 是否为8人模式
+if my_blood_way1 == 0 or my_blood_way1 > 100 or my_blood_way1 < 0:  # 尝试读取第二个角色
+    my_array_way2 = pymem.memory.read_longlong(ProcessHandle, human_array + my_offset_way2)  # 读取第二个角色数组   
+    my_blood_way2 = pymem.memory.read_int(ProcessHandle, my_array_way2 + blood_offset)  # 读取第二个角色血量    
+    my_array = my_array_way2  # 选择第二个角色数组
+    my_offset = my_offset_way2  # 选择第二个角色偏移
+    isEight = False
+    
+    
+game_width = win32api.GetSystemMetrics(0)  # 获取屏幕宽度
+game_height = win32api.GetSystemMetrics(1)  # 获取屏幕高度    
+
 
 def draw_callback(hdc):
     # 获取窗口位置
     try:
-        rect = win32gui.GetWindowRect(WindowHandle)
+        rect = win32gui.GetWindowRect(WindowHandle) # 获窗口针对屏幕原点的位置 
     except:
         print("无法获取窗口位置，请确保游戏窗口已打开。")
         return
 
-    left, top, right, bottom = rect
-    width = right - left
-    height = bottom - top
+    # left, top, right, bottom = rect
+    # game_width = right - left
+    # game_height = bottom - top
 
-    # 读取自己坐标
-    my_x = pymem.memory.read_float(ProcessHandle, my_array + x_offset)
-    my_y = pymem.memory.read_float(ProcessHandle, my_array + y_offset)
-    my_z = pymem.memory.read_float(ProcessHandle, my_array + z_offset)
-    fov_y = pymem.memory.read_float(ProcessHandle, client_dll + client_dll_offset_y)
-    fov_x = pymem.memory.read_float(ProcessHandle, client_dll + client_dll_offset_x)
+    # 获取游戏窗口大小
+    try:
+        rect = win32gui.GetWindowRect(WindowHandle)
+        left, top, right, bottom = rect
+        game_width = right - left
+        game_height = bottom - top
+    except:
+        print("无法获取游戏窗口大小，使用默认屏幕分辨率")
+        game_width = win32api.GetSystemMetrics(0)
+        game_height = win32api.GetSystemMetrics(1)
+    # width = right - left
+    # height = bottom - top
+    # 修改坐标读取代码段（约 79-84 行）
+    
+    try:
+        my_x = pymem.memory.read_float(ProcessHandle, my_array + x_offset)  # 读取我的角色 X 坐标
+        my_y = pymem.memory.read_float(ProcessHandle, my_array + y_offset)  # 读取我的角色 Y 坐标
+        my_z = pymem.memory.read_float(ProcessHandle, my_array + z_offset)  # 读取我的角色 Z 坐标
+        fov_y = pymem.memory.read_float(ProcessHandle, client_dll + client_dll_offset_y)  # 读取视角 Y 坐标
+        fov_x = pymem.memory.read_float(ProcessHandle, client_dll + client_dll_offset_x)  # 读取视角 X 坐标
+        
+        my_camp = pymem.memory.read_int(ProcessHandle, my_array + camp_offset)  # 读取阵营  0 未分配  2T  3CT
+        
+         # 新增有效性检查
+        if math.isnan(fov_y) or math.isnan(fov_x):
+            raise ValueError("fov_y/fov_x 读取到 NaN 值")
+    except (pymem.exception.MemoryReadError, ValueError) as e:
+        print(f"FOV 视角 读取失败: {e}")
+        return
+
 
     count = 1
-    multipliers = [0x8, 0x2] if isEight else [0x2, 0x8]
+    multipliers = [0x8, 0x2] if isEight else [0x2, 0x8]  # 8人模式下角色偏移量  
     for i in range(1, 20):
         if not isEight and i == 19:
             break
-        human_offset = count * multipliers[i % 2]
-        count += 1
-        other_array = pymem.memory.read_longlong(ProcessHandle, human_array + my_offset + human_offset)
+        human_offset = count * multipliers[i % 2] # 选择角色偏移量
+        
+        count += 1 # 角色计数
+        other_array = pymem.memory.read_longlong(ProcessHandle, human_array + my_offset + human_offset)  # 读取其他角色数组
+        
+        # 获取其他角色阵营
+        # other_camp = pymem.memory.read_int(ProcessHandle, other_array + camp_offset)
+        # other_camp = 0  # 阵营暂时不显示
+        # if other_camp == my_camp:  # 如果阵营相同则跳过
+        #     continue
+        
+        
         try:
-            other_blood = pymem.memory.read_int(ProcessHandle, other_array + blood_offset)
+            other_blood = pymem.memory.read_int(ProcessHandle, other_array + blood_offset) # 读取其他角色血量
         except:
             continue
-        if other_blood == 0:
+        if other_blood == 0 or other_blood > 100 or other_blood < 0:  # 如果血量为0或大于100或小于1则跳过
             continue
+        #获取敌人坐标
         other_x = pymem.memory.read_float(ProcessHandle, other_array + x_offset)
         other_y = pymem.memory.read_float(ProcessHandle, other_array + y_offset)
         other_z = pymem.memory.read_float(ProcessHandle, other_array + z_offset)
-
+        # 计算距离  
         sub_y = other_y - my_y
         sub_x = other_x - my_x
         sub_z = other_z - my_z
+        
+        # 计算距离
         dis_on_top = math.sqrt((other_x - my_x) ** 2 + (other_y - my_y) ** 2)
         dis_on_space = math.sqrt((other_x - my_x) ** 2 + (other_y - my_y) ** 2 + (other_z - my_z) ** 2)
 
@@ -139,12 +186,15 @@ def draw_callback(hdc):
             # 我与准星的距离（游戏中_横向）
             dis_WZ_x= math.sqrt(math.pow(dis_on_top,2)-math.pow(dis_DZ_x,2)) *1.3
             # 敌人在屏幕上的X坐标计算
-            dis_x_screen=dis_DZ_x/dis_WZ_x*screen_width/2+(screen_width/2)
+            dis_x_screen=dis_DZ_x / dis_WZ_x * game_width / 2 + (game_width/2) 
             #如果敌人相对于准星角度 在 -55~50才绘制（横向）
             if angle_DZ_x>-55 and angle_DZ_x<50:
                 '''=========Y计算======='''
                 # 敌相对于我空间平面角度
-                angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
+                if sub_z == 0:
+                    angle_DW_space = 0  # 当z轴相同时，角度设为0
+                else:
+                    angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
                 # 如果敌人在我上方
                 if other_z>my_z:
                     # 敌人相对于准星的角度（纵向）
@@ -154,11 +204,11 @@ def draw_callback(hdc):
                     # 敌人相对于准星的角度（纵向）
                     angle_DZ_y = fov_y - abs(angle_DW_space)
                 # 敌人与准星的距离（游戏中_纵向）
-                dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space
+                dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space  # 第一象限
                 # 我与准星的距离（游戏中_纵向）
                 dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2))*0.80
                 # 敌人在屏幕上的Y坐标计算
-                dis_y_screen = (screen_height / 2) - dis_DZ_y / dis_WZ_y * screen_height / 2
+                dis_y_screen = (game_width / 2) - dis_DZ_y / dis_WZ_y * game_width / 2
                 #绘制方框
                 drawRect(hdc,dis_x_screen+left,dis_y_screen+top+10,dis_on_space,1,brush)
         #第二象限
@@ -174,12 +224,16 @@ def draw_callback(hdc):
             # 我与准星的距离（游戏中_横向）
             dis_WZ_x = math.sqrt(math.pow(dis_on_top, 2) - math.pow(dis_DZ_x, 2)) * 1.3
             # 敌人在屏幕上的X坐标计算
-            dis_x_screen =dis_DZ_x / dis_WZ_x * screen_width / 2 + (screen_width / 2)
+            dis_x_screen =dis_DZ_x / dis_WZ_x * game_width / 2 + (game_width / 2)
             # 如果敌人相对于准星角度 在 以下范围 才绘制（横向）
             # print(angle_DZ_x)
             if (angle_DZ_x > -54 and angle_DZ_x < 50) or (angle_DZ_x>-360 and angle_DZ_x<-305) :
+                '''=========Y计算======='''
                 # 敌相对于我空间平面角度
-                angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
+                if sub_z == 0:
+                    angle_DW_space = 0  # 当z轴相同时，角度设为0
+                else:
+                    angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
                 # 如果敌人在我上方
                 if other_z > my_z:
                     # 敌人相对于准星的角度（纵向）
@@ -189,11 +243,11 @@ def draw_callback(hdc):
                     # 敌人相对于准星的角度（纵向）
                     angle_DZ_y = fov_y - abs(angle_DW_space)
                 # 敌人与准星的距离（游戏中_纵向）
-                dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space
+                dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space # 第二象限
                 # 我与准星的距离（游戏中_纵向）
                 dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2))*0.80
                 # 敌人在屏幕上的Y坐标计算
-                dis_y_screen = (screen_height / 2) - dis_DZ_y / dis_WZ_y * screen_height / 2
+                dis_y_screen = (game_height / 2) - dis_DZ_y / dis_WZ_y * game_height / 2
                 # 绘制方框
                 drawRect(hdc, dis_x_screen+left, dis_y_screen+top+10, dis_on_space, 1, brush)
         #第三象限（类似二象限）
@@ -209,11 +263,22 @@ def draw_callback(hdc):
             # 我与准星的距离（游戏中_横向）
             dis_WZ_x = math.sqrt(math.pow(dis_on_top, 2) - math.pow(dis_DZ_x, 2)) * 1.3
             # 敌人在屏幕上的X坐标计算
-            dis_x_screen = dis_DZ_x / dis_WZ_x * screen_width / 2 + (screen_width / 2)
+            dis_x_screen = dis_DZ_x / dis_WZ_x * game_width / 2 + (game_width / 2)
             # 如果敌人相对于准星角度 在 以下范围 才绘制（横向）
             if (angle_DZ_x > -410 and angle_DZ_x < -310) or (angle_DZ_x > -50 and angle_DZ_x < 0):
+                # 新增防御性检查
+                if dis_on_space == 0:
+                    continue  # 跳过零距离情况
+                ratio = sub_z / dis_on_space
+                ratio = max(-1.0, min(1.0, ratio))  # 限制在 [-1,1] 范围内
+                angle_DW_space = math.degrees(math.asin(ratio))
                 # 敌相对于我空间平面角度
-                angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
+                # angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
+                 # 确保 fov_y 是有效数值
+                if not isinstance(fov_y, (int, float)):
+                    raise ValueError(f"Invalid fov_y: {fov_y}")
+                
+                
                 # 如果敌人在我上方
                 if other_z > my_z:
                     # 敌人相对于准星的角度（纵向）
@@ -223,15 +288,19 @@ def draw_callback(hdc):
                     # 敌人相对于准星的角度（纵向）
                     angle_DZ_y = fov_y - abs(angle_DW_space)
                 # 敌人与准星的距离（游戏中_纵向）
-                dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space
+                dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space  # 第三象限
                 # 我与准星的距离（游戏中_纵向）
                 dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2))*0.80
                 # 敌人在屏幕上的Y坐标计算
-                dis_y_screen = (screen_height / 2) - dis_DZ_y / dis_WZ_y * screen_height / 2
+                dis_y_screen = (game_height / 2) - dis_DZ_y / dis_WZ_y * game_height / 2
                 # 绘制方框
-                drawRect(hdc, dis_x_screen+left, dis_y_screen+top+10, dis_on_space, 1, brush)
+                drawRect(hdc, dis_x_screen + left, dis_y_screen+top+10, dis_on_space, 1, brush)
         # 第四象限
         elif other_y < my_y and other_x > my_x:
+            
+            
+
+            
             # print("肆")
             '''========X计算========'''
             # 敌相对于我X轴的角度
@@ -243,12 +312,20 @@ def draw_callback(hdc):
             # 我与准星的距离（游戏中_横向）
             dis_WZ_x = math.sqrt(math.pow(dis_on_top, 2) - math.pow(dis_DZ_x, 2)) * 1.3
             # 敌人在屏幕上的X坐标计算
-            dis_x_screen = dis_DZ_x / dis_WZ_x * screen_width / 2 + (screen_width / 2)
+            dis_x_screen = dis_DZ_x / dis_WZ_x * game_width / 2 + (game_width / 2)
             # 如果敌人相对于准星角度 在 -55~50才绘制（横向）
             if angle_DZ_x > -55 and angle_DZ_x < 50:
                 '''=========Y计算======='''
-                # 敌相对于我空间平面角度
-                angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
+                # 敌相对于我空间平面角度，使用safe_asin确保输入值在有效范围内
+                if sub_z == 0:
+                    angle_DW_space = 0  # 当z轴相同时，角度设为0
+                else:
+                    ratio = sub_z / dis_on_space
+                    angle_DW_space = math.degrees(safe_asin(ratio))
+                
+                # 添加调试信息
+                # print(f"[第四象限调试] fov_y={fov_y}, angle_DW_space={angle_DW_space}, sub_z={sub_z}, dis_on_space={dis_on_space}")
+                
                 # 如果敌人在我上方
                 if other_z > my_z:
                     # 敌人相对于准星的角度（纵向）
@@ -257,24 +334,26 @@ def draw_callback(hdc):
                 elif other_z < my_z:
                     # 敌人相对于准星的角度（纵向）
                     angle_DZ_y = fov_y - abs(angle_DW_space)
+                else:
+                    angle_DZ_y = fov_y  # 处理 z 坐标相同的情况
+                
                 # 敌人与准星的距离（游戏中_纵向）
                 dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space
-                # 我与准星的距离（游戏中_纵向）
-                dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2))*0.80
-                # 敌人在屏幕上的Y坐标计算
-                dis_y_screen = (screen_height / 2) - dis_DZ_y / dis_WZ_y * screen_height / 2
+                # 我与准星的距离（游戏中_纵向），调整系数为0.85更适合第四象限
+                dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2)) 
+                # 敌人在屏幕上的Y坐标计算，统一使用game_height
+                dis_y_screen = (game_height / 2) - dis_DZ_y / dis_WZ_y *  (game_height / 2) 
                 # 绘制方框
-                drawRect(hdc, dis_x_screen+left, dis_y_screen+top+10, dis_on_space, 1, brush)
-  
-        # 其余象限同理，照搬原有逻辑，drawRect(hdc, ...)即可
+                drawRect(hdc, dis_x_screen+left, dis_y_screen+top+100, dis_on_space, 1, brush)
 
 # 创建Overlay窗口
-overlay = OverlayWindow(screen_width, screen_height, draw_callback)
+overlay = OverlayWindow(game_width, game_height, draw_callback)
 print("Overlay窗口已创建，开始监听游戏数据...")
 # 主循环：不断刷新Overlay窗口
-while True:
-    overlay.refresh()
-    win32gui.PumpWaitingMessages()
-    time.sleep(0.05)  # 控制刷新频率，避免过高的CPU占用
+# while True:
+    # overlay.refresh()
+    # win32gui.PumpWaitingMessages()
+win32gui.PumpMessages()  # 阻塞式消息循环
+    # time.sleep(0.2)  # 控制刷新频率，避免过高的CPU占用
     # 这里可以添加其他逻辑，比如检测游戏状态变化等  
-    
+
