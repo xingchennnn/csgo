@@ -17,7 +17,7 @@ class OverlayWindow:
         wndClass.lpszClassName = className # 设置窗口类名
         wndClass.hCursor = win32gui.LoadCursor(None, win32con.IDC_ARROW) # 设置光标为箭头
         # wndClass.hbrBackground = win32con.COLOR_WINDOW
-        wndClass.hbrBackground = 0 # 让背景不自动填充为白色
+        wndClass.hbrBackground = win32con.COLOR_WINDOW # 让背景不自动填充为白色
         self.classAtom = win32gui.RegisterClass(wndClass) # 注册窗口类
         style = win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT | win32con.WS_EX_TOPMOST
         self.hwnd = win32gui.CreateWindowEx(

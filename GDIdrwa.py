@@ -150,8 +150,8 @@ def draw_callback(hdc):
         sub_z = other_z - my_z
         
         # 计算距离
-        dis_on_top = math.sqrt((other_x - my_x) ** 2 + (other_y - my_y) ** 2)
-        dis_on_space = math.sqrt((other_x - my_x) ** 2 + (other_y - my_y) ** 2 + (other_z - my_z) ** 2)
+        dis_on_top = math.sqrt((other_x - my_x) ** 2 + (other_y - my_y) ** 2) # 计算距离
+        dis_on_space = math.sqrt((other_x - my_x) ** 2 + (other_y - my_y) ** 2 + (other_z - my_z) ** 2) # 计算距离
 
         # 下面的象限判断和坐标计算与原来一致，只是把 drawRect 换成 hdc 版本
         # 以第一象限为例，其他象限同理
@@ -297,10 +297,6 @@ def draw_callback(hdc):
                 drawRect(hdc, dis_x_screen + left, dis_y_screen+top+10, dis_on_space, 1, brush)
         # 第四象限
         elif other_y < my_y and other_x > my_x:
-            
-            
-
-            
             # print("肆")
             '''========X计算========'''
             # 敌相对于我X轴的角度
@@ -340,7 +336,7 @@ def draw_callback(hdc):
                 # 敌人与准星的距离（游戏中_纵向）
                 dis_DZ_y = math.sin(math.radians(angle_DZ_y)) * dis_on_space
                 # 我与准星的距离（游戏中_纵向），调整系数为0.85更适合第四象限
-                dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2)) 
+                dis_WZ_y = math.sqrt(math.pow(dis_on_space, 2) - math.pow(dis_DZ_y, 2)) *0.80
                 # 敌人在屏幕上的Y坐标计算，统一使用game_height
                 dis_y_screen = (game_height / 2) - dis_DZ_y / dis_WZ_y *  (game_height / 2) 
                 # 绘制方框
