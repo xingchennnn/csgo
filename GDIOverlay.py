@@ -35,7 +35,7 @@ class OverlayWindow:
         self.height = height # 设置窗口高度
          # 添加定时器 (50ms间隔)
         # self.timer_id = timer.set_timer(self.hwnd, 1, 50, None)
-        self.timer_id = user32.SetTimer(c_uint(self.hwnd), c_uint(1), c_uint(33), None)
+        self.timer_id = user32.SetTimer(c_uint(self.hwnd), c_uint(1), c_uint(50), None)
 
     def wndProc(self, hwnd, msg, wParam, lParam):
            # 需添加定时器消息处理

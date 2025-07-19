@@ -47,6 +47,10 @@ z_offset = 0xDC0 # 角色 Z 轴坐标偏移
 blood_offset = 0xAB4 # 血量偏移
 camp_offset = 0xE68 # 阵营偏移
 
+camera_offset_x = 0x1A6EB60 # 视角轴x偏移
+camera_offset_y = 0x1A6EB84 # 视角轴y偏移
+camera_offset_z = 0x1A6EB68 # 视角轴z偏移
+
 brush = win32gui.CreateSolidBrush(win32api.RGB(0, 0, 255))
 
 human_array = pymem.memory.read_longlong(ProcessHandle, client_dll + client_dll_offset_human)  # 读取人物数组 基址
@@ -101,14 +105,21 @@ def draw_callback(hdc):
     # 修改坐标读取代码段（约 79-84 行）
     
     try:
-        my_x = pymem.memory.read_float(ProcessHandle, my_array + x_offset)  # 读取我的角色 X 坐标
-        my_y = pymem.memory.read_float(ProcessHandle, my_array + y_offset)  # 读取我的角色 Y 坐标
-        my_z = pymem.memory.read_float(ProcessHandle, my_array + z_offset)  # 读取我的角色 Z 坐标
+        # my_x = pymem.memory.read_float(ProcessHandle, my_array + x_offset)  # 读取我的角色 X 坐标
+        # my_y = pymem.memory.read_float(ProcessHandle, my_array + y_offset)  # 读取我的角色 Y 坐标
+        # my_z = pymem.memory.read_float(ProcessHandle, my_array + z_offset)  # 读取我的角色 Z 坐标
+        
+        my__z = pymem.memory.read_float(ProcessHandle, my_array + z_offset)  # 读取我的角色 Z 坐标
+        my_x = pymem.memory.read_float(ProcessHandle, client_dll + camera_offset_x)  # 读取我的角色 X 坐标
+        my_y = pymem.memory.read_float(ProcessHandle, client_dll + camera_offset_y)  # 读取我的角色 Y 坐标
+        my_z = pymem.memory.read_float(ProcessHandle, client_dll + camera_offset_z)  # 读取我的角色 Z 坐标
         fov_y = pymem.memory.read_float(ProcessHandle, client_dll + client_dll_offset_y)  # 读取视角 Y 坐标
         fov_x = pymem.memory.read_float(ProcessHandle, client_dll + client_dll_offset_x)  # 读取视角 X 坐标
+        my_z = my_z + -63.84  # 修正视角 Y 坐标
         
         my_camp = pymem.memory.read_int(ProcessHandle, my_array + camp_offset)  # 读取阵营  0 未分配  2T  3CT
         
+        # print(f"我的阵营：{my_camp}")
          # 新增有效性检查
         if math.isnan(fov_y) or math.isnan(fov_x):
             raise ValueError("fov_y/fov_x 读取到 NaN 值")
@@ -130,7 +141,7 @@ def draw_callback(hdc):
         
         # 获取其他角色阵营
         # other_camp = pymem.memory.read_int(ProcessHandle, other_array + camp_offset)
-        # print(f"阵营：{other_camp}")
+        # print(f"其他阵营：{other_camp}")
         # other_camp = 0  # 阵营暂时不显示
         # if other_camp == my_camp:  # 如果阵营相同则跳过
         #     continue
@@ -198,7 +209,7 @@ def draw_callback(hdc):
                 else:
                     angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
                 # 如果敌人在我上方
-                if other_z>my_z:
+                if other_z>=my_z:
                     # 敌人相对于准星的角度（纵向）
                     angle_DZ_y = fov_y + abs(angle_DW_space)
                 #如果敌人在我下方
@@ -237,7 +248,7 @@ def draw_callback(hdc):
                 else:
                     angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
                 # 如果敌人在我上方
-                if other_z > my_z:
+                if other_z >= my_z:
                     # 敌人相对于准星的角度（纵向）
                     angle_DZ_y = fov_y + abs(angle_DW_space)
                 # 如果敌人在我下方
@@ -282,7 +293,7 @@ def draw_callback(hdc):
                 
                 
                 # 如果敌人在我上方
-                if other_z > my_z:
+                if other_z >= my_z:
                     # 敌人相对于准星的角度（纵向）
                     angle_DZ_y = fov_y + abs(angle_DW_space)
                 # 如果敌人在我下方
@@ -317,7 +328,7 @@ def draw_callback(hdc):
                 # 敌相对于我空间平面角度
                 angle_DW_space = math.degrees(math.asin(sub_z / dis_on_space))
                 # 如果敌人在我上方
-                if other_z > my_z:
+                if other_z >= my_z:
                     # 敌人相对于准星的角度（纵向）
                     angle_DZ_y = fov_y + abs(angle_DW_space)
                 # 如果敌人在我下方
@@ -335,12 +346,9 @@ def draw_callback(hdc):
 
 # 创建Overlay窗口
 overlay = OverlayWindow(game_width, game_height, draw_callback)
+
 print("Overlay窗口已创建，开始监听游戏数据...")
-# 主循环：不断刷新Overlay窗口
-# while True:
-    # overlay.refresh()
-    # win32gui.PumpWaitingMessages()
+
 win32gui.PumpMessages()  # 阻塞式消息循环
-    # time.sleep(0.2)  # 控制刷新频率，避免过高的CPU占用
-    # 这里可以添加其他逻辑，比如检测游戏状态变化等  
+
 
