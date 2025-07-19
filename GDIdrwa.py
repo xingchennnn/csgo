@@ -23,7 +23,7 @@ if not WindowHandle:
 if not WindowHandle:
     # 如果还是没有找到，可能是游戏未启动或窗口名不正确
     print("没有找到游戏窗口")
-    exit(1)
+    exit()
     
 # 获取窗口的线程和进程ID
 ThreadId, ProcessId = win32process.GetWindowThreadProcessId(WindowHandle)
@@ -31,12 +31,12 @@ PROCESS_ALL_ACCESS = (0x000F0000 | 0x00100000 | 0xFFF)
 ProcessHandle = pymem.process.open(ProcessId, True, PROCESS_ALL_ACCESS)
 if not ProcessHandle:
     print("无法打开进程，请确保游戏已启动。")
-    exit(1)
+    exit()
 client_dll = pymem.process.module_from_name(ProcessHandle, "client.dll").lpBaseOfDll
 
 if not client_dll:
     print("无法获取 client.dll 基址，请确认游戏已启动且窗口名正确。")
-    exit(1)
+    exit()
 
 client_dll_offset_human = 0x1866298 # 人物数组偏移
 client_dll_offset_y = 0x1A52314 # 方向y偏移 
